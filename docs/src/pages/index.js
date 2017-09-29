@@ -5,49 +5,15 @@ import Link from 'gatsby-link'
 import glamorous from 'glamorous'
 import { Motion, spring } from 'react-motion'
 import { Container, Row, Col } from 'glamorous-grid'
-import 'prismjs'
-import 'prismjs/components/prism-jsx'
 import { PrismCode } from 'react-prism'
 
 import Delay from 'util/Delay'
-
-const Card = glamorous.div({
-  position: 'relative',
-  padding: 24,
-  backgroundColor: 'white',
-  width: '100%',
-  height: '100%',
-  border: '1px solid #eee',
-  borderRadius: 3,
-  boxShadow: '0 2px 4px 0 rgba(25, 29, 34, 0.1)'
-})
+import Card from 'util/Card'
+import slideUp from '../util/slideUp'
 
 const Code = props => <PrismCode component="pre" className="language-jsx" {...props} />
 
-const CardAnimation = ({ children }: any) => (
-  <Delay initial={1} value={0} period={300}>
-    {delayed => (
-      <Motion
-        defaultStyle={{ top: 50, opacity: 0 }}
-        style={{
-          top: spring(delayed * 50, { stiffness: 80, damping: 17 }),
-          opacity: spring(delayed === 1 ? 0 : 1)
-        }}
-      >
-        {style => (
-          <Card
-            style={{
-              top: style.top,
-              opacity: style.opacity
-            }}
-          >
-            {children}
-          </Card>
-        )}
-      </Motion>
-    )}
-  </Delay>
-)
+const CardAnimation = slideUp(Card)
 
 const IndexPage = () => (
   <Container pt={24}>
@@ -61,6 +27,13 @@ const IndexPage = () => (
                 Much like modern art, this library doesn't make much sense. For now, it is just
                 a collection of charts made with vx and react-motion.
               </p>
+              <p>
+                Note: This website is currently just a placeholder: modern-chart does not yet
+                expose any charts.
+              </p>
+              <ul>
+                <li><Link to="/line">Line Chart</Link></li>
+              </ul>
               <h4>Usage</h4>
               <pre>
                 <code>
@@ -77,7 +50,7 @@ const IndexPage = () => (
                 of the code.
               </p>
               <PrismCode component="pre" className="language-bash">
-                  {`// The whole library. All components will be under window.mc
+                {`// The whole library. All components will be under window.mc
 node_modules/modern-chart/dist/bundle.min.js
 
 // Individual components, will be on the window as their given name, i.e. window.LineChart

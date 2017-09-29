@@ -1,9 +1,14 @@
 // @flow
 
+import '../babel-helpers'
+
 import React from 'react'
 import GitHubButton from 'react-github-button'
 import Helmet from 'react-helmet'
 import { Container, Row, Col } from 'glamorous-grid'
+
+import 'prismjs'
+import 'prismjs/components/prism-jsx'
 
 const Header = () => (
   <nav className="navbar">

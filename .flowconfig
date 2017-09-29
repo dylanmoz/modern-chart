@@ -9,6 +9,7 @@ src/*.js
 
 [ignore]
 .*/docs/.*
+.*/rollup.config.js
 .*/node_modules/eslint-plugin-jsx-a11y/.*
 .*/node_modules/graphql/.*
 .*/node_modules/graphql-skip-limit/.*

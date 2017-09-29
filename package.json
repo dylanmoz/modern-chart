@@ -4,9 +4,14 @@
   "description": "React chart components",
   "main": "es5/index.js",
   "module": "es6/index.js",
+  "js:next": "es6/index.js",
   "scripts": {
     "docs:publish": "cd docs && gatsby build --prefix-paths && gh-pages -d public && cd ..",
-    "build": "rimraf lib && babel src -d lib --ignore .spec.js && flow-copy-source -v src lib",
+    "rollup": "rollup -c && rollup --config rollup.config.umd.js",
+    "fuck": "rollup --config rollup.config.umd.js -i ./src/charts.line.js -o lib/line.min.js",
+    "build": "yarn build:es5 && yarn build:es6",
+    "build:es5": "rimraf es5 && babel src -d es5 --ignore .spec.js && flow-copy-source -v src es5",
+    "build:es6": "rimraf es6 && babel src -d es6 --ignore .spec.js --presets=react,flow && flow-copy-source -v src es6",
     "test": "yarn lint && yarn flow && yarn jest",
     "lint": "eslint src docs/src --ignore-pattern '**/*.test.js' --ext .js",
     "flow": "flow check --show-all-errors",
@@ -18,7 +23,12 @@
     "url": "git+https://github.com/dylanmoz/modern-chart.git"
   },
   "keywords": [
-    "<keywords>"
+    "react",
+    "chart",
+    "graph",
+    "visualization",
+    "vx",
+    "react-motion"
   ],
   "author": "Dylan Mozlowski <dylan.mozlowski@gmail.com> (http://dylanmoz.github.io)",
   "license": "MIT",
@@ -31,6 +41,7 @@
     "babel-core": "^6.26.0",
     "babel-eslint": "^7.2.3",
     "babel-jest": "^20.0.3",
+    "babel-plugin-external-helpers": "^6.22.0",
     "babel-plugin-glamorous-displayname": "^2.1.0",
     "babel-plugin-module-resolver": "^2.7.1",
     "babel-plugin-transform-class-properties": "^6.24.1",
@@ -53,7 +64,13 @@
     "jest": "^20.0.4",
     "react": "^15.6.1",
     "react-dom": "^15.6.1",
-    "rimraf": "^2.6.1"
+    "rimraf": "^2.6.1",
+    "rollup": "^0.49.3",
+    "rollup-analyzer-plugin": "^1.0.1",
+    "rollup-plugin-babel": "^3.0.2",
+    "rollup-plugin-commonjs": "^8.2.1",
+    "rollup-plugin-node-resolve": "^3.0.0",
+    "rollup-plugin-uglify": "^2.0.1"
   },
   "jest": {
     "collectCoverageFrom": [
@@ -67,5 +84,26 @@
     "roots": [
       "src/"
     ]
+  },
+  "dependencies": {
+    "@vx/axis": "^0.0.138",
+    "@vx/curve": "^0.0.136",
+    "@vx/event": "^0.0.136",
+    "@vx/gradient": "^0.0.140",
+    "@vx/grid": "^0.0.136",
+    "@vx/group": "^0.0.136",
+    "@vx/responsive": "^0.0.136",
+    "@vx/scale": "^0.0.136",
+    "@vx/shape": "^0.0.136",
+    "d3-array": "^1.2.0",
+    "d3-interpolate": "^1.1.5",
+    "d3-shape": "^1.2.0",
+    "fbjs": "^0.8.15",
+    "moize": "^3.4.2",
+    "react-motion": "^0.5.1"
+  },
+  "peerDependencies": {
+    "react": "^15.6.1",
+    "react-dom": "^15.6.1"
   }
 }

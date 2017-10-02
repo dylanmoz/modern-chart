@@ -8,13 +8,13 @@ import { AreaClosed, Line, LinePath, Bar } from '@vx/shape'
 import { Group } from '@vx/group'
 import { curveBasis, curveMonotoneX } from '@vx/curve'
 import { withParentSize } from '@vx/responsive'
-import { AxisBottom, AxisLeft } from '@vx/axis'
+import { AxisBottom, AxisLeft, AxisRight } from '@vx/axis'
 import { GridRows } from '@vx/grid'
 import { scaleTime, scaleLinear } from '@vx/scale'
 import { localPoint } from '@vx/event'
 import touchPoint from '@vx/event/build/touchPoint'
 import { Motion, spring, presets } from 'react-motion'
-import { extent, bisector, max } from 'd3-array'
+import { extent, bisector, max, min } from 'd3-array'
 import { line, area } from 'd3-shape'
 import { interpolate, interpolateString } from 'd3-interpolate'
 import shallowEqual from 'fbjs/lib/shallowEqual'
@@ -29,6 +29,7 @@ const GridRowsMem = moize.reactSimple(GridRows)
 const GroupMem = moize.reactSimple(Group)
 const LinePathMem = moize.reactSimple(LinePath)
 const AxisLeftMem = moize.reactSimple(AxisLeft)
+const AxisRightMem = moize.reactSimple(AxisRight)
 const AxisBottomMem = moize.reactSimple(AxisBottom)
 
 const bisectDate = bisector(d => new Date(d.date)).left
@@ -50,7 +51,8 @@ const Tooltip = glamorous('div', { shouldClassNameUpdate: () => false })({
 })
 
 const aspectRatio = 0.55
-const margin = { top: 10, left: 15, bottom: 30, right: 35 }
+const margin = { top: 10, left: 35, bottom: 30, right: 35 }
+const padding = { top: 0, left: 60, bottom: 0, right: 60 }
 
 type DataSeries = {
   data: { date: Date, value: number }[],
@@ -133,7 +135,7 @@ class TrelloGraph extends React.Component<Props, any> {
     this.xScale = this.getXScale(this.allData, this.x, this.xMax)
     this.yScale = this.getYScale(this.allData, this.y, this.yMax)
 
-    this.yScaleFormat = this.yScale.tickFormat(3, '0')
+    this.yScaleFormat = this.yScale.tickFormat(3, '0.10')
 
     const series = this.props.series
     const nextSeries = props.series
@@ -212,7 +214,7 @@ class TrelloGraph extends React.Component<Props, any> {
     const xMax = this.getXMax()
     const yMax = this.getYMax()
 
-    const positionX = x - margin.left
+    const positionX = x - margin.left - padding.left
     const positionY = y - margin.top
 
     if (positionX < 0 || positionX > xMax || positionY < 0 || positionY > yMax) {
@@ -224,7 +226,7 @@ class TrelloGraph extends React.Component<Props, any> {
 
     const dataPoints = this.props.series.map((seriesItem) => {
       const d = seriesItem.data
-      const xDomain = this.xScale.invert(x - margin.left)
+      const xDomain = this.xScale.invert(x - margin.left - padding.left)
 
       const index = bisectDate(d, xDomain, 1)
 
@@ -266,23 +268,23 @@ class TrelloGraph extends React.Component<Props, any> {
   }
 
   getXMax(props = this.props) {
-    return props.parentWidth - margin.left - margin.right
+    return props.parentWidth - margin.left - margin.right - padding.left - padding.right
   }
 
   getYMax(props = this.props) {
     return (props.parentWidth * aspectRatio) - margin.top - margin.bottom
   }
 
-  getXScale = moize.simple((data, x, xMax) => {
+  getXScale = (data, x, xMax, extentOverride) => {
     return scaleTime({
-      domain: extent(data, x),
+      domain: extentOverride || extent(data, x),
       range: [0, xMax]
     })
-  })
+  }
 
-  getYScale = (data, y, yMax) => {
+  getYScale = (data, y, yMax, maxOverride) => {
     return scaleLinear({
-      domain: [0, max(data, y)],
+      domain: [0, maxOverride || max(data, y)],
       range: [yMax, 0]
     })
   }
@@ -323,14 +325,25 @@ class TrelloGraph extends React.Component<Props, any> {
       <div style={{ position: 'relative', WebkitFontSmoothing: 'antialiased' }}>
         <svg width={width} height={height} ref={this.setSvgRef}>
           <rect x={0} y={0} width={width} height={height} fill="white" />
-          <GridRowsMem
-            top={margin.top}
-            left={margin.left}
-            scale={this.yScale}
-            numTicks={3}
-            width={this.xMax}
-          />
-          <GroupMem top={margin.top} left={margin.left}>
+          <Motion
+            defaultStyle={{ maxY: max(this.allData, this.y) }}
+            style={{ maxY: spring(max(this.allData, this.y)), end: max(this.allData, this.y) }}
+          >
+            {({ maxY, end }) => {
+              const maxYRounded = Math.abs(maxY - end) < 0.005 ? end : maxY
+
+              return (
+                <GridRowsMem
+                  top={margin.top}
+                  left={margin.left}
+                  scale={this.getYScale(this.allData, this.y, this.yMax, maxYRounded)}
+                  numTicks={3}
+                  width={this.xMax + padding.right + padding.left}
+                />
+              )
+            }}
+          </Motion>
+          <GroupMem top={margin.top} left={margin.left + padding.left}>
             <Motion
               defaultStyle={{ left: 0, opacity: 0 }}
               style={{ left: spring(vertLineLeft || 0), opacity: spring(tooltipOpen ? 0.12 : 0) }}
@@ -402,8 +415,6 @@ class TrelloGraph extends React.Component<Props, any> {
               />
             ))}
 
-
-
             <Motion
               defaultStyle={{ opacity: 0, x: vertLineLeft }}
               style={{
@@ -470,25 +481,67 @@ class TrelloGraph extends React.Component<Props, any> {
               )}
             </Delay>
           </GroupMem>
-          <AxisLeftMem
-            top={margin.top}
-            left={margin.left}
-            scale={this.yScale}
-            hideTicks
-            hideAxisLine
-            numTicks={3}
-            stroke="#eaf0f6"
-            tickFormat={this.yScaleFormat}
-            tickLabelProps={this.tickLabelProps}
-          />
-          <AxisBottomMem
-            top={height - margin.bottom}
-            left={margin.left}
-            scale={this.xScale}
-            hideTicks
-            stroke="#eaf0f6"
-            tickLabelProps={this.tickLabelProps}
-          />
+          <Motion
+            defaultStyle={{ maxY: max(this.allData, this.y) }}
+            style={{ maxY: spring(max(this.allData, this.y)), end: max(this.allData, this.y) }}
+          >
+            {({ maxY, end }) => {
+              const maxYRounded = Math.abs(maxY - end) < 0.005 ? end : maxY
+
+              return (
+                <g>
+                  <AxisLeftMem
+                    top={margin.top}
+                    left={margin.left}
+                    scale={this.getYScale(this.allData, this.y, this.yMax, maxYRounded)}
+                    hideTicks
+                    hideAxisLine
+                    numTicks={3}
+                    stroke="#eaf0f6"
+                    tickFormat={this.yScaleFormat}
+                    tickLabelProps={this.tickLabelProps}
+                  />
+                  <AxisRightMem
+                    top={margin.top}
+                    left={parentWidth - margin.right}
+                    scale={this.getYScale(this.allData, this.y, this.yMax, maxYRounded)}
+                    hideTicks
+                    hideAxisLine
+                    numTicks={3}
+                    stroke="#eaf0f6"
+                    tickFormat={this.yScaleFormat}
+                    tickLabelProps={this.tickLabelProps}
+                  />
+                </g>
+              )
+            }}
+          </Motion>
+
+          <Motion
+            defaultStyle={{ minX: min(this.allData, this.x).getTime(), maxX: max(this.allData, this.x).getTime() }}
+            style={{
+              minX: spring(min(this.allData, this.x).getTime(), { stiffness: 210, damping: 20 }),
+              maxX: spring(max(this.allData, this.x).getTime(), { stiffness: 210, damping: 20 }),
+              minEnd: min(this.allData, this.x).getTime(),
+              maxEnd: max(this.allData, this.x).getTime()
+            }}
+          >
+            {({ minX, maxX, minEnd, maxEnd }) => {
+              const minXNoBounce = minEnd // TODO: Figure out how to have no wobble and not have the
+              const maxXNoBounce = maxEnd // end markers not take forever to show up
+
+              return (
+                <AxisBottomMem
+                  top={height - margin.bottom}
+                  left={margin.left + padding.left}
+                  scale={this.getXScale(this.allData, this.x, this.xMax, [minXNoBounce, maxXNoBounce])}
+                  hideTicks
+                  stroke="#eaf0f6"
+                  tickLabelProps={this.tickLabelProps}
+                />
+              )
+            }}
+          </Motion>
         </svg>
         <div
           style={{

@@ -51,9 +51,9 @@ const series3 = [{
 }]
 
 const options = [
-  { series: series1, title: 'Option 1' },
-  { series: series2, title: 'Option 2' },
-  { series: series3, title: 'Option 3' }
+  { series: series1, title: 'Raised' },
+  { series: series2, title: 'Fundraisers' },
+  { series: series3, title: 'Donors' }
 ]
 let i = 0
 class LineDemo extends React.Component<any> {
@@ -63,11 +63,6 @@ class LineDemo extends React.Component<any> {
     this.state = {
       option: options[i]
     }
-  }
-
-  change = () => {
-    i += 1
-    this.setState({ option: options[i % options.length] })
   }
 
   render() {

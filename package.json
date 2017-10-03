@@ -97,10 +97,13 @@
     "@vx/shape": "^0.0.136",
     "d3-array": "^1.2.0",
     "d3-interpolate": "^1.1.5",
+    "d3-interpolate-path": "^2.0.0",
+    "d3-path": "^1.0.5",
     "d3-shape": "^1.2.0",
     "fbjs": "^0.8.15",
     "moize": "^3.4.2",
-    "react-motion": "^0.5.1"
+    "react-motion": "^0.5.1",
+    "react-svg-morph": "^0.1.10"
   },
   "peerDependencies": {
     "react": "^15.6.1",

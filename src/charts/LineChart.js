@@ -16,13 +16,15 @@ import touchPoint from '@vx/event/build/touchPoint'
 import { Motion, spring, presets } from 'react-motion'
 import { extent, bisector, max, min } from 'd3-array'
 import { line, area } from 'd3-shape'
-import { interpolate, interpolateString } from 'd3-interpolate'
+import { interpolate, interpolateString, interpolateArray } from 'd3-interpolate'
 import shallowEqual from 'fbjs/lib/shallowEqual'
+import { interpolatePath } from 'd3-interpolate-path'
 
 import Delay from '../utils/Delay'
 import findPathYatX from '../utils/findPathYAtX'
 
-const curveFunc = curveBasis
+
+const curveFunc = curveMonotoneX
 
 // memoizing components improves performance from 30fps to 50+fps on 5x throttled cpu
 const GridRowsMem = moize.reactSimple(GridRows)
@@ -58,11 +60,11 @@ type DataSeries = {
   data: { date: Date, value: number }[],
   label: string,
   color: string
-}[]
+}
 
 type Props = {
   parentWidth: number,
-  series: DataSeries
+  series: DataSeries[]
 }
 
 class TrelloGraph extends React.Component<Props, any> {
@@ -80,6 +82,7 @@ class TrelloGraph extends React.Component<Props, any> {
   pathInterpolator: Function
   areaInterpolator: Function
   colorInterpolator: Function
+  dataInterpolator: Function
 
   constructor(props: Props) {
     super(props)
@@ -102,20 +105,25 @@ class TrelloGraph extends React.Component<Props, any> {
 
     this.update()
 
-    const path = line()
+    const pathFn = line()
       .x(d => this.xScale(this.x(d)))
       .y(d => this.yScale(this.y(d)))
       .defined(() => true)
       .curve(curveFunc)
-    const areaPath = area()
+    const areaPathFn = area()
       .x(d => this.xScale(this.x(d)))
-      .y0(this.yScale.range()[0])
+      .y0(this.yScale.range()[0] + 50)
       .y1(d => this.yScale(this.y(d)))
       .curve(curveFunc)
 
-    this.pathInterpolator = interpolateString(path(series.data), path(series.data))
-    this.areaInterpolator = interpolateString(areaPath(series.data), areaPath(series.data))
+    this.pathInterpolator = interpolatePath(pathFn(series.data), pathFn(series.data))
+    this.areaInterpolator = interpolatePath(
+      areaPathFn(series.data),
+      areaPathFn(series.data),
+      (start, end) => start.x === end.x && start.x === this.xMax
+    )
     this.colorInterpolator = interpolate(series.color, series.color)
+    this.dataInterpolator = interpolateArray(series.data, series.data)
   }
 
   componentWillReceiveProps(nextProps) {
@@ -140,9 +148,8 @@ class TrelloGraph extends React.Component<Props, any> {
     const series = this.props.series
     const nextSeries = props.series
     if (series !== nextSeries && series.length === 1 && nextSeries.length === 1) {
-      // Interpolate between the two lines
       this.interpolateCount += 1
-      // this.interpolator = interpolateArray(series[0].data, nextSeries[0].data)
+
       const path1 = line()
         .x(d => currentXScale(this.x(d)))
         .y(d => currentYScale(this.y(d)))
@@ -156,18 +163,21 @@ class TrelloGraph extends React.Component<Props, any> {
 
       const area1 = area()
         .x(d => currentXScale(this.x(d)))
-        .y0(currentYScale.range()[0])
+        .y0(currentYScale.range()[0] + 50)
         .y1(d => currentYScale(this.y(d)))
         .curve(curveFunc)
       const area2 = area()
         .x(d => this.xScale(this.x(d)))
-        .y0(this.yScale.range()[0])
+        .y0(this.yScale.range()[0] + 50)
         .y1(d => this.yScale(this.y(d)))
         .curve(curveFunc)
 
-
-      this.pathInterpolator = interpolateString(path1(series[0].data), path2(nextSeries[0].data))
-      this.areaInterpolator = interpolateString(area1(series[0].data), area2(nextSeries[0].data))
+      this.pathInterpolator = interpolatePath(path1(series[0].data), path2(nextSeries[0].data))
+      this.areaInterpolator = interpolatePath(
+        area1(series[0].data),
+        area2(nextSeries[0].data),
+        (start, end) => start.x === end.x && start.x === this.xMax
+      )
       this.colorInterpolator = interpolate(series[0].color, nextSeries[0].color)
     }
   }
@@ -373,6 +383,17 @@ class TrelloGraph extends React.Component<Props, any> {
 
                   return (
                     <g>
+                      <defs>
+                        <clipPath id="graph-clip">
+                          <rect
+                            x={2}
+                            y={0}
+                            width={width - margin.left - margin.right - padding.left - padding.right - 4}
+                            height={height - margin.bottom - margin.top + 1}
+                            fill="white"
+                          />
+                        </clipPath>
+                      </defs>
                       <LinearGradient
                         id="line-gradient"
                         from={color}
@@ -383,15 +404,17 @@ class TrelloGraph extends React.Component<Props, any> {
                         key="0"
                         data-index="0"
                         d={path}
-                        stroke={color}
+                        stroke="transparent"
                         strokeWidth="2"
                         ref={this.setPathRef}
                         fill="none"
                       />
                       <path
                         d={areaPath}
-                        stroke="transparent"
+                        stroke={color}
+                        strokeWidth="2"
                         fill="url(#line-gradient)"
+                        style={{ clipPath: 'url(#graph-clip)' }}
                       />
                     </g>
                   )
@@ -409,7 +432,7 @@ class TrelloGraph extends React.Component<Props, any> {
                 x={this.x}
                 y={this.y}
                 curve={curveFunc}
-                stroke={'green'}
+                stroke={seriesItem.color}
                 strokeLinecap="round"
                 innerRef={this.setPathRef}
               />

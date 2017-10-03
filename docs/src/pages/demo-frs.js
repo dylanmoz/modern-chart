@@ -14,16 +14,19 @@ import { LineChart } from '../../../src'
 
 const CardAnimated = slideUp(Card)
 
+const now = new Date().getTime()
+let sum = 0
 const series1 = [{
   color: 'rgb(107, 157, 255)',
-  data: [
-    { date: new Date(2017, 3, 1), value: 1 },
-    { date: new Date(2017, 4, 1), value: 2 },
-    { date: new Date(2017, 5, 1), value: 6 },
-    { date: new Date(2017, 6, 1), value: 3 },
-    { date: new Date(2017, 7, 1), value: 1 },
-    { date: new Date(2017, 8, 1), value: 5 }
-  ]
+  data: Array(30).fill(1).map((_, i) => {
+    const random = Math.random() * 250
+    sum += random
+
+    return {
+      date: new Date(now - (i * 1000 * 60 * 60)),
+      value: sum
+    }
+  }).reverse()
 }]
 
 const series2 = [{
@@ -42,8 +45,8 @@ const series3 = [{
   color: '#ff9900',
   data: [
     { date: new Date(2017, 6, 1), value: 0 },
-    { date: new Date(2017, 7, 1), value: 2 },
-    { date: new Date(2017, 8, 1), value: 2 },
+    { date: new Date(2017, 7, 1), value: 0 },
+    { date: new Date(2017, 8, 1), value: 0 },
     { date: new Date(2017, 9, 1), value: 4 },
     { date: new Date(2017, 10, 1), value: 5 },
     { date: new Date(2017, 11, 1), value: 9 },
@@ -55,13 +58,13 @@ const options = [
   { series: series2, title: 'Fundraisers' },
   { series: series3, title: 'Donors' }
 ]
-let i = 0
+
 class LineDemo extends React.Component<any> {
   constructor(props) {
     super(props)
 
     this.state = {
-      option: options[i]
+      option: options[0]
     }
   }
 

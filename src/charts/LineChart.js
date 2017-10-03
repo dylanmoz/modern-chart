@@ -6,7 +6,7 @@ import moize from 'moize'
 import { LinearGradient } from '@vx/gradient'
 import { AreaClosed, Line, LinePath, Bar } from '@vx/shape'
 import { Group } from '@vx/group'
-import { curveBasis, curveMonotoneX } from '@vx/curve'
+import { curveLinear, curveBasis, curveMonotoneX } from '@vx/curve'
 import { withParentSize } from '@vx/responsive'
 import { AxisBottom, AxisLeft, AxisRight } from '@vx/axis'
 import { GridRows } from '@vx/grid'
@@ -24,7 +24,7 @@ import Delay from '../utils/Delay'
 import findPathYatX from '../utils/findPathYAtX'
 
 
-const curveFunc = curveMonotoneX
+const curveFunc = curveLinear
 
 // memoizing components improves performance from 30fps to 50+fps on 5x throttled cpu
 const GridRowsMem = moize.reactSimple(GridRows)

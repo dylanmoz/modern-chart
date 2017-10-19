@@ -8,7 +8,7 @@
   "scripts": {
     "docs:publish": "cd docs && gatsby build --prefix-paths && gh-pages -d public && cd ..",
     "rollup": "rollup -c && rollup --config rollup.config.umd.js",
-    "fuck": "rollup --config rollup.config.umd.js -i ./src/charts.line.js -o lib/line.min.js",
+    "rollup:umd": "rollup --config rollup.config.umd.js -i ./src/charts.line.js -o lib/line.min.js",
     "build": "yarn build:es5 && yarn build:es6",
     "build:es5": "rimraf es5 && babel src -d es5 --ignore .spec.js && flow-copy-source -v src es5",
     "build:es6": "rimraf es6 && babel src -d es6 --ignore .spec.js --presets=react,flow && flow-copy-source -v src es6",
